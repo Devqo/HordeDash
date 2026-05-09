@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}HordeUI | Authentication{% endblock %}
+{% block title %}HordeDash | Authentication{% endblock %}
 
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
@@ -17,9 +17,11 @@
     </div>
 
     {% if error %}
-    <div class="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded mb-6 text-sm mono text-center flex items-center justify-center gap-2">
+    <div
+        class="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded mb-6 text-sm mono text-center flex items-center justify-center gap-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
         {{ error }}
     </div>
@@ -33,19 +35,26 @@
             </label>
             <div class="relative flex items-center">
                 <!-- Lock Icon -->
-                <div class="absolute left-3 text-gray-500 transition-colors duration-200 pointer-events-none flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                <div
+                    class="absolute left-3 text-gray-500 transition-colors duration-200 pointer-events-none flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                 </div>
                 <!-- Input Field -->
-                <input type="password" name="password" required autofocus class="p-3 pl-10 rounded-lg w-full tracking-widest mono transition-all duration-200" placeholder="ENTER YOUR PASSWORD">
+                <input type="password" name="password" required autofocus
+                    class="p-3 pl-10 rounded-lg w-full tracking-widest mono transition-all duration-200"
+                    placeholder="ENTER YOUR PASSWORD">
             </div>
         </div>
 
-        <button type="submit" class="mt-2 bg-amber-500 text-black px-6 py-3 rounded font-bold mono text-sm hover:bg-amber-400 hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] active:scale-[0.98] transition-all w-full flex items-center justify-center gap-2">
+        <button type="submit"
+            class="mt-2 bg-amber-500 text-black px-6 py-3 rounded font-bold mono text-sm hover:bg-amber-400 hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] active:scale-[0.98] transition-all w-full flex items-center justify-center gap-2">
             AUTHENTICATE
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>
         </button>
