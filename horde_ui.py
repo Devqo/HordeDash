@@ -408,7 +408,6 @@ def stop_worker(force=False):
 
 # --- Background Tasks ---
 def stats_poller():
-    global stats_cache
     while True:
         config = load_config()
         api_key = config.get("api_key")
