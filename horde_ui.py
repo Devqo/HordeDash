@@ -248,7 +248,6 @@ def get_gpu_info():
 
 # --- Worker Management ---
 def _tail_logs():
-    global worker_proc
     if not worker_proc or not worker_proc.stdout:
         return
     
@@ -372,7 +371,6 @@ def start_worker(extra_args=""):
     return True
 
 def stop_worker(force=False):
-    global worker_proc
     stopped = False
     
     target_pid = None
