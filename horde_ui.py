@@ -557,7 +557,7 @@ def api_logs():
 @app.route('/api/worker/status')
 @login_required
 def api_worker_status():
-    global worker_proc, worker_thread, worker_start_time
+    global worker_start_time
     is_running = worker_proc is not None and worker_proc.poll() is None
     
     if not is_running:
@@ -701,4 +701,4 @@ if __name__ == '__main__':
     threading.Thread(target=models_poller, daemon=True).start()
     
     print(f"HordeUI running at http://0.0.0.0:{PORT}")
-    socketio.run(app, host='0.0.0.0', port=PORT, debug=False)
+    socketio.run(app, host='0.0.0.0', port=PORT, debug=False)alse)
