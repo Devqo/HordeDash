@@ -701,4 +701,4 @@ if __name__ == '__main__':
     threading.Thread(target=models_poller, daemon=True).start()
     
     print(f"HordeUI running at http://0.0.0.0:{PORT}")
-    socketio.run(app, host='0.0.0.0', port=PORT, debug=False)alse)
+    socketio.run(app, host='0.0.0.0', port=PORT, debug=False)
