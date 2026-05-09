@@ -10,7 +10,7 @@ fi
 # 2. Clone/Update reGen
 if [ ! -d "horde-worker-reGen" ]; then
     echo "[i] Cloning AI Horde reGen..."
-    git clone https://github.com/Haidra-Org/AI-Horde-worker-reGen.git horde-worker-reGen
+    git clone https://github.com/Haidra-Org/horde-worker-reGen.git horde-worker-reGen
 fi
 
 # 3. Setup Virtual Environment

@@ -14,7 +14,7 @@ if errorlevel 1 (
 :: 2. Clone/Update reGen
 if not exist "horde-worker-reGen" (
     echo [i] Cloning AI Horde reGen...
-    git clone https://github.com/Haidra-Org/AI-Horde-worker-reGen.git horde-worker-reGen
+    git clone https://github.com/Haidra-Org/horde-worker-reGen.git horde-worker-reGen
 ) else (
     echo [i] horde-worker-reGen already exists.
 )
