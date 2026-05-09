@@ -248,7 +248,6 @@ def get_gpu_info():
 
 # --- Worker Management ---
 def _tail_logs():
-    global worker_proc
     if not worker_proc or not worker_proc.stdout:
         return
     
@@ -372,7 +371,6 @@ def start_worker(extra_args=""):
     return True
 
 def stop_worker(force=False):
-    global worker_proc
     stopped = False
     
     target_pid = None
@@ -408,7 +406,6 @@ def stop_worker(force=False):
 
 # --- Background Tasks ---
 def stats_poller():
-    global stats_cache
     while True:
         config = load_config()
         api_key = config.get("api_key")
@@ -557,7 +554,7 @@ def api_logs():
 @app.route('/api/worker/status')
 @login_required
 def api_worker_status():
-    global worker_proc, worker_thread, worker_start_time
+    global worker_start_time
     is_running = worker_proc is not None and worker_proc.poll() is None
     
     if not is_running:
