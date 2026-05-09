@@ -94,8 +94,9 @@ def handle_connect():
 # Regexes from @carpfp (<@544620828214558721>)
 RE_JOBS = re.compile(r"(?<=Jobs: )[^\n]+")
 RE_JOBS_SUB = re.compile(r"(?<=<)[^?>]+")
-RE_KUDOS = re.compile(r"(?<=Total Session Kudos: ).+(?= \|)")
-RE_STATS = re.compile(r"(?<=Session job info: )[^\n]+")
+RE_KUDOS = re.compile(r"Total Session Kudos: ([\d,.]+)")
+RE_KUDOS_HR = re.compile(r"Session: ([\d,.]+)")
+RE_STATS = re.compile(r"Session job info: ([^\n]+)")
 RE_JOB_ID = re.compile(r"(?<=Starting inference for job )\S+")
 RE_JOB_MODEL = re.compile(r"(?<=Model: )[^\n]+")
 RE_JOB_DETAILS = re.compile(r"\d+x\d+ for \d+ steps with sampler \S+ for a batch of \d+")
@@ -264,67 +265,67 @@ def _tail_logs():
             log_buffer.append(line)
         
         raw_line = strip_ansi_python(line)
+        
         # Status block detection (flexible carets)
-        if "^^^^" in raw_line and len(raw_line.strip().replace("^", "")) == 0:
+        if "^^^^" in raw_line:
             log_state["in_status_block"] = True
             log_state["current_status_block"] =[]
-        elif "vvvv" in raw_line and len(raw_line.strip().replace("v", "")) == 0:
+        elif "vvvv" in raw_line:
             log_state["in_status_block"] = False
             parse_status_block(log_state["current_status_block"])
         elif log_state["in_status_block"]:
             log_state["current_status_block"].append(raw_line)
 
-            # Official Regex Parsing
-            stats_match = RE_STATS.search(raw_line)
-            if stats_match:
-                try:
-                    parts = stats_match.group(0).split("|")
-                    for p in parts:
-                        if "submitted:" in p:
-                            stats_cache["session_jobs"] = int(p.split(":")[1].strip())
-                except: pass
+        # Telemetry Parsing (Outside status block for robustness)
+        stats_match = RE_STATS.search(raw_line)
+        if stats_match:
+            try:
+                parts = stats_match.group(1).split("|")
+                for p in parts:
+                    if "submitted:" in p or "Jobs:" in p:
+                        val = p.split(":")[1].strip().split()[0] # Handle "10 (eMPS...)"
+                        stats_cache["session_jobs"] = int(val.replace(",", ""))
+            except: pass
 
-            kudos_match = RE_KUDOS.search(raw_line)
-            if kudos_match:
-                try:
-                    # kudos_match.group(0) -> "2,741.51 over 28.95 minutes"
-                    val = kudos_match.group(0).split("over")[0].strip().replace(",", "")
-                    stats_cache["session_kudos"] = float(val)
-                    # The rate is after the |, so RE_KUDOS doesn't catch it directly if it ends at |
-                    # But we can extract it manually or refine RE_KUDOS
-                    hr_part = raw_line.split("|")[-1]
-                    if "Session:" in hr_part:
-                        hr_val = hr_part.split(":")[1].split("(")[0].strip().replace(",", "")
-                        stats_cache["session_kudos_hr"] = float(hr_val)
-                except: pass
-
-            job_id_match = RE_JOB_ID.search(raw_line)
-            if job_id_match:
-                stats_cache["current_job_id"] = job_id_match.group(0)
-                stats_cache["activity_text"] = "Starting Inference"
-                stats_cache["activity_subtext"] = f"Job ID: {job_id_match.group(0)}"
+        kudos_match = RE_KUDOS.search(raw_line)
+        if kudos_match:
+            try:
+                stats_cache["session_kudos"] = float(kudos_match.group(1).replace(",", ""))
+            except: pass
             
-            job_model_match = RE_JOB_MODEL.search(raw_line)
-            if job_model_match:
-                stats_cache["current_job_model"] = job_model_match.group(0)
-                stats_cache["activity_text"] = "Inference in Progress"
-                stats_cache["activity_subtext"] = f"Model: {job_model_match.group(0)}"
+        kudos_hr_match = RE_KUDOS_HR.search(raw_line)
+        if kudos_hr_match:
+            try:
+                stats_cache["session_kudos_hr"] = float(kudos_hr_match.group(1).replace(",", ""))
+            except: pass
 
-            job_details_match = RE_JOB_DETAILS.search(raw_line)
-            if job_details_match:
-                stats_cache["current_job_details"] = job_details_match.group(0)
-                stats_cache["activity_subtext"] += f" ({job_details_match.group(0)})"
+        job_id_match = RE_JOB_ID.search(raw_line)
+        if job_id_match:
+            stats_cache["current_job_id"] = job_id_match.group(0)
+            stats_cache["activity_text"] = "Starting Inference"
+            stats_cache["activity_subtext"] = f"Job ID: {job_id_match.group(0)}"
+        
+        job_model_match = RE_JOB_MODEL.search(raw_line)
+        if job_model_match:
+            stats_cache["current_job_model"] = job_model_match.group(0)
+            stats_cache["activity_text"] = "Inference in Progress"
+            stats_cache["activity_subtext"] = f"Model: {job_model_match.group(0)}"
 
-            if "Inference finished for job" in raw_line:
-                stats_cache["activity_text"] = "System Idle"
-                stats_cache["activity_subtext"] = "Waiting for next job..."
-                stats_cache["current_job_id"] = None
+        job_details_match = RE_JOB_DETAILS.search(raw_line)
+        if job_details_match:
+            stats_cache["current_job_details"] = job_details_match.group(0)
+            stats_cache["activity_subtext"] += f" ({job_details_match.group(0)})"
 
-            if "Total Kudos Accumulated:" in raw_line:
-                try:
-                    val = raw_line.split(":")[1].split("(")[0].strip().replace(",", "")
-                    stats_cache["kudos"] = float(val)
-                except: pass
+        if "Inference finished for job" in raw_line:
+            stats_cache["activity_text"] = "System Idle"
+            stats_cache["activity_subtext"] = "Waiting for next job..."
+            stats_cache["current_job_id"] = None
+
+        if "Total Kudos Accumulated:" in raw_line:
+            try:
+                val = raw_line.split(":")[1].split("(")[0].strip().replace(",", "")
+                stats_cache["kudos"] = float(val)
+            except: pass
 
         socketio.emit("stats_update", stats_cache)
         socketio.emit("log", {"line": line})
