@@ -1,0 +1,51 @@
+:root {
+    --bg-deep: #0a0b0e;
+    --bg-panel: #13151a;
+    --bg-raised: #1c1e26;
+    --accent: #f59e0b;
+    --accent-faint: rgba(245, 158, 11, 0.08);
+    --green: #10b981;
+    --red: #ef4444;
+    --border: #1e2129;
+    --border-mid: #282c36;
+    --text: #d4d8e2;
+    --text-mid: #7d8494;
+    --text-dim: #3e4350;
+}
+
+body {
+    background-color: var(--bg-deep);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    margin: 0;
+}
+
+.mono {
+    font-family: 'IBM Plex Mono', monospace;
+}
+
+.industrial-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    transition: border-color 0.15s ease;
+}
+
+input,
+select,
+textarea {
+    background: #0d0f13 !important;
+    border: 1px solid var(--border-mid) !important;
+    color: #d4d8e2 !important;
+}
+
+input:focus,
+select:focus {
+    border-color: var(--accent) !important;
+    outline: none;
+    box-shadow: none;
+}
+
+input::placeholder {
+    color: var(--text-dim);
+    letter-spacing: 0.02em;
+}

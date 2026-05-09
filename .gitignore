@@ -1,0 +1,5 @@
+horde-worker-reGen/
+venv/
+ui_cache.json
+__pycache__/
+*.pyc

@@ -1,0 +1,67 @@
+body {
+    overflow-x: hidden;
+}
+
+.glass {
+    background: rgba(19, 21, 26, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+}
+
+/* Left-border accent is only used for running/stopped status, not every card */
+.status-running {
+    border-left: 3px solid var(--green) !important;
+}
+
+.status-stopped {
+    border-left: 3px solid var(--red) !important;
+}
+
+/* Hover: just a border color shift, no spatial movement */
+.industrial-card:hover {
+    border-color: var(--border-mid);
+}
+
+.log-container {
+    background: #060709;
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+/* Scanlines: subtler than before */
+.scanlines::before {
+    content: " ";
+    display: block;
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(to bottom,
+            transparent,
+            transparent 2px,
+            rgba(0, 0, 0, 0.06) 2px,
+            rgba(0, 0, 0, 0.06) 4px);
+    z-index: 2;
+    pointer-events: none;
+}
+
+.tab-btn.active {
+    color: var(--accent);
+    border-bottom: 2px solid var(--accent);
+}
+
+.custom-slider {
+    -webkit-appearance: none;
+    height: 3px;
+    background: var(--border-mid);
+    border-radius: 2px;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.custom-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: var(--accent);
+    cursor: pointer;
+    border-radius: 2px;
+}

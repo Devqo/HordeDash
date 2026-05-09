@@ -1,0 +1,490 @@
+{% extends "base.html" %}
+
+{% block title %}HordeUI | Control Center{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <div class="w-60 glass border-r border-white/5 flex flex-col z-10 relative">
+        <div class="p-5 border-b border-white/5 flex items-center gap-2.5">
+            <div id="status-orb" class="w-2 h-2 rounded-full bg-red-500"></div>
+            <h1 class="text-base font-bold tracking-tight mono">HORDE<span class="text-amber-500">UI</span></h1>
+        </div>
+
+        <nav class="flex-1 p-3 flex flex-col gap-0.5">
+            <button onclick="showTab('dashboard')"
+                class="tab-btn active flex items-center gap-2.5 p-2.5 rounded hover:bg-white/5 transition-all text-xs text-left text-gray-300 hover:text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+                Dashboard
+            </button>
+            <button onclick="showTab('models')"
+                class="tab-btn flex items-center gap-2.5 p-2.5 rounded hover:bg-white/5 transition-all text-xs text-left text-gray-400 hover:text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 01-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                Models
+            </button>
+            <button onclick="showTab('config')"
+                class="tab-btn flex items-center gap-2.5 p-2.5 rounded hover:bg-white/5 transition-all text-xs text-left text-gray-400 hover:text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Configuration
+            </button>
+            <button onclick="showTab('advanced')"
+                class="tab-btn flex items-center gap-2.5 p-2.5 rounded hover:bg-white/5 transition-all text-xs text-left text-gray-400 hover:text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Maintenance
+            </button>
+        </nav>
+
+        <div class="p-4 border-t border-white/5">
+            <div class="flex items-center gap-2.5 mb-3">
+                <div class="w-7 h-7 rounded bg-white/5 flex items-center justify-center text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                </div>
+                <div class="flex flex-col min-w-0">
+                    <span id="worker-name-display"
+                        class="text-[11px] font-semibold text-white mono truncate">GUEST_WORKER</span>
+                    <span class="text-[10px] text-gray-600 mono">Authenticated</span>
+                </div>
+            </div>
+            <a href="/logout"
+                class="block w-full p-2 rounded text-center border border-red-900/40 text-red-500/70 text-[10px] mono hover:bg-red-500/10 hover:text-red-400 transition-all">Terminate
+                session</a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-7 relative">
+        <!-- Dashboard Tab -->
+        <div id="tab-dashboard" class="tab-pane flex flex-col gap-5">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h2 class="text-xl font-semibold tracking-tight">System Overview</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">Real-time telemetry and process control</p>
+                </div>
+                <button id="toggle-worker" onclick="toggleWorker()"
+                    class="bg-amber-500 text-black px-5 py-2 rounded font-semibold mono text-xs hover:bg-amber-400 transition-all uppercase">START_WORKER</button>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div class="industrial-card p-4 rounded-lg">
+                    <div class="text-[10px] font-medium text-gray-500 mb-1.5 uppercase tracking-wide">Session Uptime
+                    </div>
+                    <div id="session-uptime" class="text-2xl font-bold mono text-white tabular-nums">0h 0m</div>
+                </div>
+                <div class="industrial-card p-4 rounded-lg">
+                    <div class="text-[10px] font-medium text-gray-500 mb-1.5 uppercase tracking-wide">Jobs</div>
+                    <div id="session-jobs" class="text-2xl font-bold mono text-white tabular-nums">0</div>
+                </div>
+                <div class="industrial-card p-4 rounded-lg">
+                    <div class="text-[10px] font-medium text-gray-500 mb-1.5 uppercase tracking-wide">Performance</div>
+                    <div class="flex items-baseline gap-2">
+                        <div id="stat-session-kudos" class="text-2xl font-bold mono text-white tabular-nums">0</div>
+                        <div class="text-[10px] mono text-amber-500 font-bold"><span
+                                id="stat-session-kudos-hr">0</span>/hr</div>
+                    </div>
+                </div>
+                <div class="industrial-card p-4 rounded-lg">
+                    <div class="text-[10px] font-medium text-gray-500 mb-1.5 uppercase tracking-wide">Status</div>
+                    <div id="worker-status-text" class="text-2xl font-bold mono text-red-500 uppercase">Stopped</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                <!-- Activity Pulse -->
+                <div class="lg:col-span-2 industrial-card p-5 rounded-xl flex flex-col gap-4">
+                    <h3 class="text-[10px] font-semibold text-amber-500 uppercase tracking-wide">Recent Activity</h3>
+                    <div id="activity-card"
+                        class="bg-black/20 p-4 rounded-lg border border-white/5 flex items-center gap-5">
+                        <div id="activity-icon"
+                            class="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center text-gray-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div id="activity-text" class="text-sm font-semibold text-white mono">System Idle</div>
+                            <div id="activity-subtext" class="text-[10px] text-gray-500 mt-0.5">Waiting for worker
+                                start...</div>
+                            <div id="activity-progress-container"
+                                class="w-full h-1 bg-white/5 rounded mt-2 overflow-hidden hidden">
+                                <div id="activity-progress-bar" class="h-full bg-amber-500 transition-all duration-500"
+                                    style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div id="activity-timestamp" class="text-[10px] mono text-gray-600 tabular-nums shrink-0">
+                            00:00:00</div>
+                    </div>
+
+                    <!-- Thread Status -->
+                    <h3 class="text-[10px] font-semibold text-amber-500 uppercase tracking-wide mt-2">Inference
+                        Processes</h3>
+                    <div id="process-grid" class="flex flex-col">
+                        <!-- Threads injected here -->
+                    </div>
+                </div>
+
+                <!-- Hardware Monitor -->
+                <div class="industrial-card p-5 rounded-xl flex flex-col gap-5">
+                    <h3 class="text-[10px] font-semibold text-amber-500 uppercase tracking-wide">Hardware</h3>
+
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between text-[10px] font-medium">
+                            <span class="text-gray-500 uppercase">CPU</span>
+                            <span id="cpu-val" class="text-gray-300 mono tabular-nums">0%</span>
+                        </div>
+                        <div class="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                            <div id="cpu-bar" class="h-full bg-amber-500/70 transition-all duration-1000"
+                                style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between text-[10px] font-medium">
+                            <span class="text-gray-500 uppercase">RAM</span>
+                            <span id="ram-val" class="text-gray-300 mono tabular-nums">0%</span>
+                        </div>
+                        <div class="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                            <div id="ram-bar" class="h-full bg-amber-500/70 transition-all duration-1000"
+                                style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-white/5">
+                        <div class="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-3">GPU</div>
+                        <div id="gpu-info-container" class="flex flex-col gap-4">
+                            <!-- GPU items injected here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuration Tab -->
+        <div id="tab-config" class="tab-pane hidden flex flex-col gap-5">
+            <div class="industrial-card p-6 rounded-xl">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-lg font-semibold">Configuration</h2>
+                        <p class="text-xs text-gray-500 mt-0.5">Worker runtime parameters</p>
+                    </div>
+                    <button onclick="saveConfig()"
+                        class="bg-amber-500 text-black px-5 py-2 rounded font-semibold mono text-xs hover:bg-amber-400 transition-all">Save
+                        Changes</button>
+                </div>
+
+                <form id="config-form" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <!-- Core Section -->
+                    <div class="md:col-span-2">
+                        <p
+                            class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-3 pb-2 border-b border-white/5">
+                            Identity & Auth</p>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[11px] font-medium text-gray-500">Worker name</label>
+                        <input type="text" name="dreamer_name" class="p-2.5 rounded w-full text-sm">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[11px] font-medium text-gray-500">AI Horde API key</label>
+                        <input type="password" name="api_key" class="p-2.5 rounded w-full text-sm">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[11px] font-medium text-gray-500">CivitAI API token</label>
+                        <input type="password" name="civitai_api_token" class="p-2.5 rounded w-full text-sm">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[11px] font-medium text-gray-500">Ngrok Authtoken</label>
+                        <input type="password" name="ngrok_authtoken" class="p-2.5 rounded w-full text-sm">
+                    </div>
+
+                    <!-- Performance Section -->
+                    <div class="md:col-span-2 mt-2">
+                        <p
+                            class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-3 pb-2 border-b border-white/5">
+                            Performance</p>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[11px] font-medium text-gray-500">Max power (resolution) — <span
+                                id="val-max_power" class="text-amber-500 mono">0</span></label>
+                        <input type="range" name="max_power" min="1" max="128" class="custom-slider"
+                            oninput="updateValDisplay(this)">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[11px] font-medium text-gray-500">Queue size — <span id="val-queue_size"
+                                class="text-amber-500 mono">0</span></label>
+                        <input type="range" name="queue_size" min="0" max="3" class="custom-slider"
+                            oninput="updateValDisplay(this)">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[11px] font-medium text-gray-500">Max threads — <span id="val-max_threads"
+                                class="text-amber-500 mono">0</span></label>
+                        <input type="range" name="max_threads" min="1" max="8" class="custom-slider"
+                            oninput="updateValDisplay(this)">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[11px] font-medium text-gray-500">Max batch — <span id="val-max_batch"
+                                class="text-amber-500 mono">0</span></label>
+                        <input type="range" name="max_batch" min="1" max="16" class="custom-slider"
+                            oninput="updateValDisplay(this)">
+                    </div>
+
+                    <!-- Capabilities Section -->
+                    <div class="md:col-span-2 mt-2">
+                        <p
+                            class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-3 pb-2 border-b border-white/5">
+                            Capabilities</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 md:col-span-2">
+                        <label
+                            class="flex items-center gap-3 cursor-pointer p-3 rounded border border-white/5 hover:bg-white/5 transition-all">
+                            <input type="checkbox" name="nsfw"
+                                class="w-4 h-4 rounded border-gray-700 text-amber-500 focus:ring-amber-500">
+                            <span class="text-xs font-medium">Allow NSFW</span>
+                        </label>
+                        <label
+                            class="flex items-center gap-3 cursor-pointer p-3 rounded border border-white/5 hover:bg-white/5 transition-all">
+                            <input type="checkbox" name="allow_img2img"
+                                class="w-4 h-4 rounded border-gray-700 text-amber-500 focus:ring-amber-500">
+                            <span class="text-xs font-medium">Img2Img</span>
+                        </label>
+                        <label
+                            class="flex items-center gap-3 cursor-pointer p-3 rounded border border-white/5 hover:bg-white/5 transition-all">
+                            <input type="checkbox" name="allow_painting"
+                                class="w-4 h-4 rounded border-gray-700 text-amber-500 focus:ring-amber-500">
+                            <span class="text-xs font-medium">Inpainting</span>
+                        </label>
+                        <label
+                            class="flex items-center gap-3 cursor-pointer p-3 rounded border border-white/5 hover:bg-white/5 transition-all">
+                            <input type="checkbox" name="allow_lora"
+                                class="w-4 h-4 rounded border-gray-700 text-amber-500 focus:ring-amber-500">
+                            <span class="text-xs font-medium">Allow LoRA</span>
+                        </label>
+                        <label
+                            class="flex items-center gap-3 cursor-pointer p-3 rounded border border-white/5 hover:bg-white/5 transition-all">
+                            <input type="checkbox" name="high_memory_mode"
+                                class="w-4 h-4 rounded border-gray-700 text-amber-500 focus:ring-amber-500">
+                            <span class="text-xs font-medium">High memory mode</span>
+                        </label>
+                        <label
+                            class="flex items-center gap-3 cursor-pointer p-3 rounded border border-white/5 hover:bg-white/5 transition-all">
+                            <input type="checkbox" name="unload_models_from_vram_often"
+                                class="w-4 h-4 rounded border-gray-700 text-amber-500 focus:ring-amber-500">
+                            <span class="text-xs font-medium">Unload VRAM often</span>
+                        </label>
+                    </div>
+
+                    <div class="md:col-span-2 flex flex-col gap-1.5 mt-2">
+                        <label class="text-[11px] font-medium text-gray-500">Extra CLI arguments</label>
+                        <input type="text" name="extra_cmdline_args" class="p-2.5 rounded w-full mono text-xs"
+                            placeholder="--lowvram --medvram ...">
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Models Tab -->
+        <div id="tab-models" class="tab-pane hidden flex flex-col gap-5">
+            <div class="industrial-card p-6 rounded-xl">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-lg font-semibold">Model Catalogue</h2>
+                        <p class="text-xs text-gray-500 mt-0.5">Select models to offer or skip</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <select id="top-n-selector" class="p-2 rounded mono text-xs">
+                            <option value="">Quick select...</option>
+                            <option value="top 5">Top 5</option>
+                            <option value="top 10">Top 10</option>
+                            <option value="top 20">Top 20</option>
+                            <option value="ALL">All models</option>
+                        </select>
+                        <button onclick="applyTopN()"
+                            class="bg-amber-500 text-black px-4 py-2 rounded font-semibold mono text-xs hover:bg-amber-400 transition-all">Apply</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-5">
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[11px] font-medium text-gray-500">Active models</label>
+                        <div id="models-to-load-list"
+                            class="flex flex-wrap gap-2 p-3 border border-white/5 bg-black/20 rounded min-h-[52px]">
+                            <!-- Active models will be listed here -->
+                        </div>
+                    </div>
+
+                    <div class="relative">
+                        <input type="text" id="model-search" placeholder="Search models..."
+                            class="p-2.5 pl-9 rounded w-full text-sm mb-3">
+                        <div class="absolute left-3 top-3 text-gray-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+
+                        <div class="max-h-[400px] overflow-y-auto border border-white/5 rounded">
+                            <table class="w-full text-left mono text-xs">
+                                <thead class="bg-white/5 text-gray-500 sticky top-0">
+                                    <tr>
+                                        <th class="p-3 font-medium">Model name</th>
+                                        <th class="p-3 font-medium text-center">Queue</th>
+                                        <th class="p-3 font-medium text-center">Workers</th>
+                                        <th class="p-3 font-medium text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="models-table-body">
+                                    <!-- Model rows will be injected here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Maintenance Tab -->
+        <div id="tab-advanced" class="tab-pane hidden flex flex-col gap-5">
+            <div class="industrial-card p-6 rounded-xl">
+                <h2 class="text-lg font-semibold mb-5">System Maintenance</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <button onclick="repairAndRestart()"
+                        class="flex flex-col items-start gap-1.5 p-5 bg-amber-500/5 border border-amber-500/15 rounded-lg hover:bg-amber-500/10 transition-all text-left">
+                        <span class="text-amber-500 font-semibold text-sm mono">Smart Repair & Update</span>
+                        <span class="text-[10px] text-gray-500">Runs git pull and environment update</span>
+                    </button>
+                    <button onclick="clearStatsCache()"
+                        class="flex flex-col items-start gap-1.5 p-5 bg-red-500/5 border border-red-500/15 rounded-lg hover:bg-red-500/10 transition-all text-left">
+                        <span class="text-red-500 font-semibold text-sm mono">Flush System Cache</span>
+                        <span class="text-[10px] text-gray-500">Clears telemetry cache, logs, and local state</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Global Stats -->
+            <div class="industrial-card p-6 rounded-xl">
+                <div class="flex justify-between items-center mb-5">
+                    <h2 class="text-lg font-semibold">Global Telemetry</h2>
+                    <span id="last-sync-time" class="text-[10px] mono text-gray-600">Syncing...</span>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-5">
+                    <div>
+                        <div class="text-[10px] text-gray-500 font-medium mb-1">Account balance</div>
+                        <div id="stat-total-kudos" class="text-xl font-bold mono text-amber-500 tabular-nums">0</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-gray-500 font-medium mb-1">Kudos generated</div>
+                        <div id="stat-kudos-generated" class="text-xl font-bold mono tabular-nums">0</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-gray-500 font-medium mb-1">Jobs fulfilled</div>
+                        <div id="stat-jobs" class="text-xl font-bold mono tabular-nums">0</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-gray-500 font-medium mb-1">Avg kudos/hr</div>
+                        <div id="stat-kudos-hr-avg" class="text-xl font-bold mono tabular-nums">0</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-gray-500 font-medium mb-1">Total uptime</div>
+                        <div id="stat-uptime-total" class="text-xl font-bold mono tabular-nums">0h 0m</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- External Access -->
+            <div class="industrial-card p-6 rounded-xl">
+                <h2 class="text-lg font-semibold mb-5">Cloud Tunneling</h2>
+                <div
+                    class="bg-blue-500/5 border border-blue-500/10 p-5 rounded-lg flex flex-col md:flex-row items-center justify-between gap-5">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 bg-blue-500/10 rounded flex items-center justify-center text-blue-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="text-sm font-semibold mono">Ngrok Secure Tunnel</div>
+                            <div id="ngrok-status" class="text-[10px] text-gray-500 mt-0.5">Tunnel is inactive.</div>
+                        </div>
+                    </div>
+                    <button id="ngrok-btn" onclick="toggleNgrok()"
+                        class="bg-blue-500/15 text-blue-400 border border-blue-500/20 px-5 py-2 rounded font-semibold mono text-xs hover:bg-blue-500/25 transition-all">Start
+                        Tunnel</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Terminal Drawer -->
+    <div class="fixed bottom-0 right-0 w-full md:w-[calc(100%-240px)] z-50 pointer-events-none">
+        <div id="terminal-drawer" class="mx-6 mb-4 pointer-events-auto">
+            <div class="glass rounded-t-lg overflow-hidden shadow-2xl border-b-0">
+                <div onclick="toggleConsole()"
+                    class="flex items-center justify-between p-3 bg-black/40 border-b border-white/5 cursor-pointer hover:bg-black/60 transition-all">
+                    <div class="flex items-center gap-3">
+                        <div class="flex gap-1.5">
+                            <div class="w-2.5 h-2.5 rounded-full bg-red-500/40"></div>
+                            <div class="w-2.5 h-2.5 rounded-full bg-amber-500/40"></div>
+                            <div class="w-2.5 h-2.5 rounded-full bg-green-500/40"></div>
+                        </div>
+                        <span class="text-[10px] font-medium mono text-gray-500 flex items-center gap-1.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            Live output
+                        </span>
+                    </div>
+                    <div id="console-chevron" class="text-gray-600 transition-transform">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                        </svg>
+                    </div>
+                </div>
+                <div id="console-body"
+                    class="h-0 opacity-0 pointer-events-none transition-all duration-300 log-container p-4 overflow-y-auto scanlines relative">
+                    <div id="log-display"
+                        class="mono text-[11px] whitespace-pre-wrap flex flex-col gap-0.5 relative z-10">
+                        <!-- Logs will stream here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}
