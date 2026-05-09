@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  hordedash:
+    build: .
+    container_name: hordedash
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./horde-worker-reGen:/app/horde-worker-reGen
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
