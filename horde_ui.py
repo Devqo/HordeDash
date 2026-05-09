@@ -120,19 +120,23 @@ def parse_status_block(lines):
     processes =[]
     current_section = None
     for line in lines:
-        line = line.strip()
-        if "Process info:" in line:
+        # Find the actual content after the loguru prefix (usually after ' - ')
+        content = line.split(" - ", 1)[1] if " - " in line else line
+        content = content.strip()
+
+        if "Process info:" in content:
             current_section = "process"
             continue
-        elif "Job Info:" in line:
+        elif "Job Info:" in content:
             current_section = "job"
             continue
-        elif "Worker Info:" in line:
+        elif "Worker Info:" in content:
             current_section = "worker"
             continue
             
-        if current_section == "process" and line.startswith("Process"):
-            processes.append(line)
+        # Match "Process 0", "Process 1", etc.
+        if current_section == "process" and "Process " in content:
+            processes.append(content)
             
     if processes:
         with stats_lock:
