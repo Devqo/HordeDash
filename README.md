@@ -6,16 +6,16 @@ A web-based management dashboard for [AI Horde](https://aihorde.net/) workers (r
 
 ## Features
 
-- **Process Management**: Start, stop, and force-kill the worker process.
+- **Process Management**: Start, stop, and graceful drain management for the worker process.
 - **Real-time Stats**: 
   - GPU utilization and memory usage (via `nvidia-smi`).
   - Session performance: Kudos, jobs completed, and kudos/hr.
   - Account overview: Total kudos, worker count, and fulfillment stats.
 - **Live Logs**: Stream worker output directly to the browser via WebSockets.
-- **Config Editor**: Edit `bridgeData.yaml` in-browser.
-- **Remote Access**: Built-in ngrok integration.
+- **Config Editor**: Unified interface for `bridgeData.yaml` and Dashboard settings.
+- **Remote Access**: Built-in ngrok integration with automatic port synchronization.
 - **Maintenance**: Trigger model downloads and git updates.
-- **Security**: Password protection and sensitive key masking for remote sessions.
+- **Security**: Password protection, sensitive key masking, and session invalidation on credential change.
 
 ---
 
@@ -29,13 +29,15 @@ A web-based management dashboard for [AI Horde](https://aihorde.net/) workers (r
    ```
 2. Run the setup script:
    ```cmd
-   setup.cmd
+   setup.cmd --password [OPTIONAL_PWD] --port [OPTIONAL_PORT]
    ```
-   *This clones the worker repo, creates a venv, and installs dependencies.*
+   *Flags used during setup are saved permanently to your `.env` file.*
 
-### Linux / Docker
-- **Manual**: `chmod +x setup.sh && ./setup.sh`
-- **Docker**: `docker-compose up -d`
+### Linux / Mac
+- **Manual**: `chmod +x setup.sh && ./setup.sh --password [PWD] --port [PORT]`
+
+### Docker
+- **Docker Compose**: `docker-compose up -d`
 
 ---
 
@@ -46,10 +48,10 @@ Start the UI with:
 ```cmd
 start_ui.cmd --password [PASSWORD] (optional) --port [PORT] (default: 7860)
 ```
-If no password is provided, a random token will be generated on startup.
+*Flags used with `start_ui` are session-only and will not overwrite your permanent `.env` settings.*
 
 ### Remote Access
-Configure your **ngrok Auth Token** in the Settings tab or add `ngrok_authtoken: "YourToken"` to bridgeData.yaml to expose the dashboard to the web.
+Configure your **ngrok Auth Token** directly in the Settings tab. The dashboard will automatically handle the tunnel and port mapping. Dashboard-specific settings are now stored securely in `.env` to keep your worker logs clean.
 
 ---
 
