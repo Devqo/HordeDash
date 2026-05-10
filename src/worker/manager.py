@@ -220,9 +220,9 @@ class WorkerManager:
         extra_args_list = shlex.split(extra_args, posix=is_posix) if extra_args else []
 
         if os.name == 'nt':
-            if os.path.exists("horde-worker-reGen/horde-bridge.cmd"):
-                # Let Python's subprocess handle .cmd natively for safe escaping instead of manual cmd /c
-                cmd = ["horde-bridge.cmd"] + extra_args_list
+            bridge_script = os.path.join("horde-worker-reGen", "horde-bridge.cmd")
+            if os.path.exists(bridge_script):
+                cmd = [os.path.abspath(bridge_script)] + extra_args_list
             else:
                 cmd = [sys.executable, "-u", "run_worker.py"] + extra_args_list
         else:
