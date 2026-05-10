@@ -8,6 +8,8 @@ from src.utils.helpers import get_gpu_info
 from src.worker.manager import worker_manager
 
 
+from concurrent.futures import ThreadPoolExecutor
+
 def stats_poller():
     while True:
         config = load_config()
@@ -19,37 +21,52 @@ def stats_poller():
                 r = requests.get(
                     "https://aihorde.net/api/v2/find_user", headers=headers, timeout=10)
 
-                with stats_lock:
-                    if r.status_code == 200:
-                        data = r.json()
-                        records = data.get("records", {})
-                        fulfillment = records.get("fulfillment", {})
-                        total_jobs_user = fulfillment.get(
-                            "image", 0) + fulfillment.get("text", 0)
+                user_data = {}
+                worker_ids = []
+                if r.status_code == 200:
+                    user_data = r.json()
+                    records = user_data.get("records", {})
+                    fulfillment = records.get("fulfillment", {})
+                    total_jobs_user = fulfillment.get(
+                        "image", 0) + fulfillment.get("text", 0)
 
+                    with stats_lock:
                         stats_cache.update({
-                            "username": data.get("username"),
-                            "kudos": data.get("kudos"),
-                            "kudos_generated": data.get("kudos_details", {}).get("accumulated", 0),
-                            "worker_count": data.get("worker_count"),
-                            "worker_ids": data.get("worker_ids", []),
+                            "username": user_data.get("username"),
+                            "kudos": user_data.get("kudos"),
+                            "kudos_generated": user_data.get("kudos_details", {}).get("accumulated", 0),
+                            "worker_count": user_data.get("worker_count"),
+                            "worker_ids": user_data.get("worker_ids", []),
                             "requests_fulfilled": total_jobs_user
                         })
+                        worker_ids = stats_cache.get("worker_ids", [])
 
-                    worker_ids = stats_cache.get("worker_ids", [])
-                    total_uptime = 0
-                    dreamer_name = config.get("dreamer_name")
-                    matched_worker = None
-
-                    for wid in worker_ids:
+                def fetch_worker(wid):
+                    try:
                         rw = requests.get(
                             f"https://aihorde.net/api/v2/workers/{wid}", headers=headers, timeout=5)
                         if rw.status_code == 200:
-                            w = rw.json()
-                            total_uptime += w.get("uptime", 0)
-                            if not matched_worker or w.get("name") == dreamer_name:
-                                matched_worker = w
+                            return rw.json()
+                    except requests.RequestException:
+                        pass
+                    return None
 
+                results = []
+                if worker_ids:
+                    with ThreadPoolExecutor(max_workers=min(len(worker_ids), 10)) as executor:
+                        results = list(executor.map(fetch_worker, worker_ids))
+
+                total_uptime = 0
+                dreamer_name = config.get("dreamer_name")
+                matched_worker = None
+
+                for w in results:
+                    if w:
+                        total_uptime += w.get("uptime", 0)
+                        if not matched_worker or w.get("name") == dreamer_name:
+                            matched_worker = w
+
+                with stats_lock:
                     stats_cache.update({
                         "uptime": total_uptime,
                         "last_sync": time.strftime("%H:%M:%S")
@@ -75,11 +92,15 @@ def stats_poller():
                     else:
                         stats_cache["session_uptime"] = 0
                         stats_cache["worker_start_time"] = None
+                    
+                    cache_copy = stats_cache.copy()
 
-                socketio.emit("stats_update", stats_cache)
+                socketio.emit("stats_update", cache_copy)
                 save_stats_cache()
             except requests.RequestException as e:
-                print(f"Stats poll error: {e}")
+                print(f"Stats poll network error: {e}")
+            except Exception as e:
+                print(f"Stats poll generic error: {e}")
 
         time.sleep(30)
 
@@ -108,7 +129,10 @@ def models_poller():
                     # In-place mutation preserves references held by other modules
                     models_cache.clear()
                     models_cache.extend(r.json())
-                socketio.emit("models_update", models_cache)
+                    models_copy = list(models_cache)
+                socketio.emit("models_update", models_copy)
         except requests.RequestException:
+            pass
+        except Exception:
             pass
         time.sleep(300)

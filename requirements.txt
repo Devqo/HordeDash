@@ -6,3 +6,5 @@ PyYAML>=6.0.1
 ruamel.yaml>=0.18.0
 pyngrok>=8.1.0
 python-dotenv>=1.0.0
+filelock>=3.13.0
+requests-mock>=1.11.0

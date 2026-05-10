@@ -3,6 +3,7 @@ import threading
 import secrets
 from flask import Flask
 from dotenv import load_dotenv
+from werkzeug.security import generate_password_hash
 
 from src.extensions import socketio
 from src.state import load_stats_cache
@@ -29,28 +30,38 @@ def create_app(ui_password=None, port=None, persist_config=False):
 
     using_generated_password = False
     active_password = ui_password or os.getenv("UI_PASSWORD")
+    stored_password = active_password
 
     if not active_password:
         active_password = secrets.token_hex(8)
         using_generated_password = True
+        stored_password = generate_password_hash(active_password)
         print("\n" + "=" * 60)
         print(f"⚠️  NO UI_PASSWORD SET. GENERATED: {active_password}")
-        print("This password has been saved to your .env file.")
+        print("This password has been saved as a hash to your .env file.")
         print("=" * 60 + "\n")
-        update_env_file("UI_PASSWORD", active_password)
+        update_env_file("UI_PASSWORD", stored_password)
+    elif not active_password.startswith(('pbkdf2:', 'scrypt:', 'sha256:')):
+        # Migrate plaintext password to hash
+        stored_password = generate_password_hash(active_password)
+        update_env_file("UI_PASSWORD", stored_password)
+        print("[v] UI_PASSWORD migrated to secure hash in .env")
     elif persist_config and ui_password:
-        update_env_file("UI_PASSWORD", active_password)
-        print("[v] Password saved permanently to .env")
+        # If user passed a new plaintext password via CLI and wants to persist it
+        stored_password = generate_password_hash(active_password)
+        update_env_file("UI_PASSWORD", stored_password)
+        print("[v] New password saved securely to .env")
 
     secret_key = os.getenv("SECRET_KEY")
     if not secret_key:
         secret_key = secrets.token_hex(32)
         update_env_file("SECRET_KEY", secret_key)
 
-    # Bind session integrity to the current password. Changing the password
-    # rotates the signing key, effectively invalidating all active sessions.
-    app.config['SECRET_KEY'] = f"{secret_key}_{active_password}"
-    app.config['UI_PASSWORD'] = active_password
+    # SECRET_KEY is bound to the stored password hash (or plaintext if migration failed)
+    # plus the secret_key. This ensures sessions remain stable across restarts even if 
+    # the password was migrated during the initial run.
+    app.config['SECRET_KEY'] = f"{secret_key}_{stored_password}"
+    app.config['UI_PASSWORD'] = stored_password
     app.config['USING_GENERATED_PASSWORD'] = using_generated_password
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'

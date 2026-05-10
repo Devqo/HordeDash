@@ -6,6 +6,7 @@ import threading
 import subprocess
 import psutil
 import re
+import shlex
 
 from src.extensions import socketio
 from src.state import stats_cache, stats_lock, log_buffer, log_lock, log_state
@@ -51,8 +52,8 @@ def parse_status_block(lines):
     if processes:
         with stats_lock:
             stats_cache["processes"] = processes
-        socketio.emit("stats_update", stats_cache)
-
+            cache_copy = stats_cache.copy()
+        socketio.emit("stats_update", cache_copy)
 
 class WorkerManager:
     def __init__(self):
@@ -103,7 +104,9 @@ class WorkerManager:
                 if match:
                     handler(match, raw_line)
 
-            socketio.emit("stats_update", stats_cache)
+            with stats_lock:
+                cache_copy = stats_cache.copy()
+            socketio.emit("stats_update", cache_copy)
             socketio.emit("log", {"line": line})
 
         self.worker_proc.wait()
@@ -205,19 +208,24 @@ class WorkerManager:
             stats_cache["activity_text"] = "Starting Worker"
             stats_cache["activity_subtext"] = "Initializing..."
             stats_cache["worker_start_time"] = self.worker_start_time
-        socketio.emit("stats_update", stats_cache)
+            cache_copy = stats_cache.copy()
+        socketio.emit("stats_update", cache_copy)
 
         env = os.environ.copy()
         env["PYTHONUNBUFFERED"] = "1"
 
+        # On Windows, shlex.split with posix=True (default) strips backslashes, breaking paths.
+        is_posix = os.name != 'nt'
+        extra_args_list = shlex.split(extra_args, posix=is_posix) if extra_args else []
+
         if os.name == 'nt':
             if os.path.exists("horde-worker-reGen/horde-bridge.cmd"):
-                cmd = ["cmd", "/c", "horde-bridge.cmd"] + extra_args.split()
+                # Let Python's subprocess handle .cmd natively for safe escaping instead of manual cmd /c
+                cmd = ["horde-bridge.cmd"] + extra_args_list
             else:
-                cmd = [sys.executable, "-u", "run_worker.py"] + \
-                    extra_args.split()
+                cmd = [sys.executable, "-u", "run_worker.py"] + extra_args_list
         else:
-            cmd = ["bash", "./horde-bridge.sh"] + extra_args.split()
+            cmd = ["bash", "./horde-bridge.sh"] + extra_args_list
 
         creationflags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0
 

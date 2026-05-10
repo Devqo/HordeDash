@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, current_app
+from werkzeug.security import check_password_hash
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -9,7 +10,16 @@ def login():
         'USING_GENERATED_PASSWORD', False)
     if request.method == 'POST':
         pwd = request.form.get('password')
-        if pwd == current_app.config['UI_PASSWORD']:
+        stored_password = current_app.config['UI_PASSWORD']
+
+        # Support both hashed and legacy plaintext passwords during transition
+        is_valid = False
+        if stored_password.startswith(('pbkdf2:', 'scrypt:', 'sha256:')):
+            is_valid = check_password_hash(stored_password, pwd)
+        else:
+            is_valid = (pwd == stored_password)
+
+        if is_valid:
             session['authenticated'] = True
             return redirect(url_for('views.index'))
         return render_template('login.html', error="Invalid password", using_generated_password=using_generated_password)
