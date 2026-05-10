@@ -101,7 +101,8 @@ def test_worker_path_resolution(tmp_path, monkeypatch):
     
     # Mock Popen to just verify the command and not actually run anything
     with patch("subprocess.Popen") as mock_popen, \
-         patch("src.extensions.socketio.emit"):
+         patch("src.extensions.socketio.emit"), \
+         patch("threading.Thread.start"):
         
         mock_popen.return_value = MagicMock()
         mock_popen.return_value.poll.return_value = None
