@@ -1,0 +1,10 @@
+venv/
+__pycache__/
+*.pyc
+.git/
+horde-worker-reGen/
+.env
+ui_cache.json
+.pytest_cache/
+tests/
+pytest.ini

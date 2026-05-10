@@ -3,3 +3,5 @@ venv/
 ui_cache.json
 __pycache__/
 *.pyc
+.pytest_cache/
+.env
