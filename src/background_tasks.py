@@ -96,7 +96,7 @@ def stats_poller():
         api_key = config.get("api_key")
         if api_key and api_key != "0000000000":
             try:
-                headers = {"apikey": api_key, "Client-Agent": "HordeUI:1.0.0:Github"}
+                headers = {"apikey": api_key, "Client-Agent": "HordeDash:1.0.0:Github"}
                 worker_ids = _fetch_user_data(headers)
                 dreamer_name = config.get("dreamer_name")
 

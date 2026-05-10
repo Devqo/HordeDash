@@ -31,5 +31,5 @@ ENV PYTHONUNBUFFERED=1
 
 EXPOSE 5000
 
-CMD ["python", "horde_ui.py"]
+CMD ["python", "horde_dash.py"]
 

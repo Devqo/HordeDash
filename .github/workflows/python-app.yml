@@ -30,7 +30,7 @@ jobs:
         # Stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # Treat all other errors as warnings so the CI passes
-        flake8 src/ horde_ui.py --count --exit-zero --max-complexity=15 --max-line-length=127 --statistics
+        flake8 src/ horde_dash.py --count --exit-zero --max-complexity=15 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
         pytest tests/
