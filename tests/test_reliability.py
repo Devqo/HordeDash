@@ -78,6 +78,49 @@ def test_shlex_sanitization():
         assert malicious_args not in args_passed
 
 
+def test_worker_path_resolution(tmp_path, monkeypatch):
+    """Test that WorkerManager correctly resolves executable paths."""
+    from src.worker.manager import WorkerManager
+    import subprocess
+    
+    # Create a mock worker directory
+    worker_dir = tmp_path / "horde-worker-reGen"
+    worker_dir.mkdir()
+    
+    if os.name == 'nt':
+        bridge_script = worker_dir / "horde-bridge.cmd"
+    else:
+        bridge_script = worker_dir / "horde-bridge.sh"
+    
+    bridge_script.write_text("echo hello")
+    
+    wm = WorkerManager()
+    
+    # Change current directory to tmp_path so it finds the mock worker_dir
+    os.chdir(tmp_path)
+    
+    # Mock Popen to just verify the command and not actually run anything
+    with patch("subprocess.Popen") as mock_popen, \
+         patch("src.extensions.socketio.emit"):
+        
+        mock_popen.return_value = MagicMock()
+        mock_popen.return_value.poll.return_value = None
+        
+        wm.start_worker()
+        
+        assert mock_popen.called
+        cmd_called = mock_popen.call_args[0][0]
+        
+        # On Windows, it should now be an absolute path
+        if os.name == 'nt':
+            assert os.path.isabs(cmd_called[0])
+            assert cmd_called[0].endswith("horde-bridge.cmd")
+            # Verify the file actually exists at that absolute path
+            assert os.path.exists(cmd_called[0])
+        else:
+            assert "horde-bridge.sh" in cmd_called[1]
+
+
 def test_password_hashing_migration(tmp_path, monkeypatch):
     """Test that plaintext passwords in .env are migrated to hashes."""
     from src.app import create_app
