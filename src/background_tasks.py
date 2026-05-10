@@ -46,7 +46,8 @@ def _process_worker_data(worker_ids, headers, dreamer_name):
     results = []
     if worker_ids:
         with ThreadPoolExecutor(max_workers=min(len(worker_ids), 10)) as executor:
-            fetch_fn = lambda wid: _fetch_worker(wid, headers)
+            def fetch_fn(wid):
+                return _fetch_worker(wid, headers)
             results = list(executor.map(fetch_fn, worker_ids))
 
     total_uptime = 0
