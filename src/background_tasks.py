@@ -6,22 +6,26 @@ from src.utils.config import load_config
 from src.utils.helpers import get_gpu_info
 from src.worker.manager import worker_manager
 
+
 def stats_poller():
     while True:
         config = load_config()
         api_key = config.get("api_key")
         if api_key and api_key != "0000000000":
             try:
-                headers = {"apikey": api_key, "Client-Agent": "HordeUI:1.0.0:Github"}
-                r = requests.get("https://aihorde.net/api/v2/find_user", headers=headers, timeout=10)
-                
+                headers = {"apikey": api_key,
+                           "Client-Agent": "HordeUI:1.0.0:Github"}
+                r = requests.get(
+                    "https://aihorde.net/api/v2/find_user", headers=headers, timeout=10)
+
                 with stats_lock:
                     if r.status_code == 200:
                         data = r.json()
                         records = data.get("records", {})
                         fulfillment = records.get("fulfillment", {})
-                        total_jobs_user = fulfillment.get("image", 0) + fulfillment.get("text", 0)
-                        
+                        total_jobs_user = fulfillment.get(
+                            "image", 0) + fulfillment.get("text", 0)
+
                         stats_cache.update({
                             "username": data.get("username"),
                             "kudos": data.get("kudos"),
@@ -30,14 +34,15 @@ def stats_poller():
                             "worker_ids": data.get("worker_ids", []),
                             "requests_fulfilled": total_jobs_user
                         })
-                    
+
                     worker_ids = stats_cache.get("worker_ids", [])
                     total_uptime = 0
                     dreamer_name = config.get("dreamer_name")
                     matched_worker = None
 
                     for wid in worker_ids:
-                        rw = requests.get(f"https://aihorde.net/api/v2/workers/{wid}", headers=headers, timeout=5)
+                        rw = requests.get(
+                            f"https://aihorde.net/api/v2/workers/{wid}", headers=headers, timeout=5)
                         if rw.status_code == 200:
                             w = rw.json()
                             total_uptime += w.get("uptime", 0)
@@ -50,7 +55,8 @@ def stats_poller():
                     })
 
                     if total_uptime > 0:
-                        stats_cache["kudos_hr_avg"] = stats_cache.get("kudos_generated", 0) / (total_uptime / 3600)
+                        stats_cache["kudos_hr_avg"] = stats_cache.get(
+                            "kudos_generated", 0) / (total_uptime / 3600)
                     else:
                         stats_cache["kudos_hr_avg"] = 0
 
@@ -60,9 +66,10 @@ def stats_poller():
                             "maintenance": matched_worker.get("maintenance"),
                             "worker_kudos": matched_worker.get("kudos_details", {}).get("generated", 0)
                         })
-                    
+
                     if worker_manager.worker_start_time:
-                        stats_cache["session_uptime"] = int(time.time() - worker_manager.worker_start_time)
+                        stats_cache["session_uptime"] = int(
+                            time.time() - worker_manager.worker_start_time)
                         stats_cache["worker_start_time"] = worker_manager.worker_start_time
                     else:
                         stats_cache["session_uptime"] = 0
@@ -70,10 +77,11 @@ def stats_poller():
 
                 socketio.emit("stats_update", stats_cache)
                 save_stats_cache()
-            except Exception as e:
+            except requests.RequestException as e:
                 print(f"Stats poll error: {e}")
-        
+
         time.sleep(30)
+
 
 def sysinfo_poller():
     import psutil
@@ -85,17 +93,21 @@ def sysinfo_poller():
                 "gpus": get_gpu_info()
             }
             socketio.emit("sysinfo", info)
-        except: pass
+        except (psutil.Error, ValueError, KeyError):
+            pass
         time.sleep(2)
+
 
 def models_poller():
     while True:
         try:
-            r = requests.get("https://aihorde.net/api/v2/status/models?type=image", timeout=20)
+            r = requests.get(
+                "https://aihorde.net/api/v2/status/models?type=image", timeout=20)
             if r.status_code == 200:
-                with stats_lock: # Using stats_lock for models_cache too if it's shared, or just ensuring atomicity
+                with stats_lock:  # Using stats_lock for models_cache too if it's shared, or just ensuring atomicity
                     models_cache.clear()
                     models_cache.extend(r.json())
                 socketio.emit("models_update", models_cache)
-        except: pass
+        except requests.RequestException:
+            pass
         time.sleep(300)

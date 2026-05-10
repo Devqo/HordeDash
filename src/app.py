@@ -12,11 +12,12 @@ from src.routes.views import views_bp
 from src.routes.auth import auth_bp
 from src.routes.api import api_bp
 
+
 def create_app(ui_password=None):
     load_dotenv()
-    
+
     app = Flask(__name__)
-    
+
     using_generated_password = False
 
     if not ui_password:
@@ -25,11 +26,12 @@ def create_app(ui_password=None):
     if not ui_password:
         ui_password = secrets.token_hex(8)
         using_generated_password = True
-        print("\n" + "="*60)
-        print(f"⚠️  NO UI_PASSWORD SET. YOUR AUTO-GENERATED PASSWORD IS: {ui_password}")
+        print("\n" + "=" * 60)
+        print(
+            f"⚠️  NO UI_PASSWORD SET. YOUR AUTO-GENERATED PASSWORD IS: {ui_password}")
         print("This password has been saved to your .env file for future logins.")
-        print("="*60 + "\n")
-        
+        print("=" * 60 + "\n")
+
         # Attempt to save it to .env
         try:
             with open(".env", "a") as f:
@@ -53,7 +55,7 @@ def create_app(ui_password=None):
     app.config['USING_GENERATED_PASSWORD'] = using_generated_password
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-    
+
     if os.getenv("FLASK_ENV") == "production" or os.getenv("USE_SECURE_COOKIES") == "true":
         app.config['SESSION_COOKIE_SECURE'] = True
 
@@ -67,6 +69,7 @@ def create_app(ui_password=None):
     load_stats_cache()
 
     return app
+
 
 def start_background_tasks():
     threading.Thread(target=stats_poller, daemon=True).start()

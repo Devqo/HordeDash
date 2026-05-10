@@ -1,6 +1,7 @@
-from flask import request, session
+from flask import session
 
 from src.extensions import socketio
+
 
 def register_socket_events():
     @socketio.on('connect')
