@@ -6,24 +6,71 @@ yaml = YAML()
 yaml.preserve_quotes = True
 yaml.indent(mapping=2, sequence=4, offset=2)
 
+DASHBOARD_KEYS = ["ngrok_authtoken", "UI_PASSWORD", "PORT"]
+
+
+def update_env_file(key, value):
+    """Surgically update or add a key-value pair in the .env file."""
+    lines = []
+    if os.path.exists(".env"):
+        with open(".env", "r") as f:
+            lines = f.readlines()
+
+    found = False
+    new_line = f"{key}={value}\n"
+    for i, line in enumerate(lines):
+        if line.startswith(f"{key}="):
+            lines[i] = new_line
+            found = True
+            break
+
+    if not found:
+        if lines and not lines[-1].endswith("\n"):
+            lines[-1] += "\n"
+        lines.append(new_line)
+
+    with open(".env", "w") as f:
+        f.writelines(lines)
+
 
 def load_config():
-    if not os.path.exists(BRIDGE_DATA_PATH):
-        return {}
-    with open(BRIDGE_DATA_PATH, "r", encoding="utf-8") as f:
-        return yaml.load(f) or {}
+    """Load config from both bridgeData.yaml and .env."""
+    config = {}
+    if os.path.exists(BRIDGE_DATA_PATH):
+        with open(BRIDGE_DATA_PATH, "r", encoding="utf-8") as f:
+            config = yaml.load(f) or {}
+
+    # Overlay dashboard-specific keys from .env
+    for key in DASHBOARD_KEYS:
+        val = os.getenv(key)
+        if val:
+            config[key] = val
+
+    return config
 
 
 def save_config(new_config):
-    # Ensure the directory exists
+    """Save config, directing keys to bridgeData.yaml or .env as appropriate."""
     os.makedirs(os.path.dirname(BRIDGE_DATA_PATH), exist_ok=True)
 
-    config_to_save = {}
+    # 1. Handle Dashboard Keys (.env)
+    for key in DASHBOARD_KEYS:
+        if key in new_config:
+            update_env_file(key, new_config[key])
+            # Set the env var in the current process so load_config sees it immediately
+            os.environ[key] = str(new_config[key])
+
+    # 2. Handle Worker Keys (YAML)
+    yaml_config = {}
     if os.path.exists(BRIDGE_DATA_PATH):
         with open(BRIDGE_DATA_PATH, "r", encoding="utf-8") as f:
-            config_to_save = yaml.load(f) or {}
+            yaml_config = yaml.load(f) or {}
 
-    # Update with new values
+    # Filter out dashboard keys from the YAML to avoid unrecognized key warnings
+    filtered_updates = {
+        k: v for k, v in new_config.items() if k not in DASHBOARD_KEYS
+    }
+
     def deep_update(base, updates):
         for k, v in updates.items():
             if isinstance(v, dict) and k in base and isinstance(base[k], dict):
@@ -31,7 +78,12 @@ def save_config(new_config):
             else:
                 base[k] = v
 
-    deep_update(config_to_save, new_config)
+    deep_update(yaml_config, filtered_updates)
+
+    # Clean up the YAML: explicitly remove any leftover dashboard keys
+    # that might have been there from previous versions
+    for key in DASHBOARD_KEYS:
+        yaml_config.pop(key, None)
 
     with open(BRIDGE_DATA_PATH, "w", encoding="utf-8") as f:
-        yaml.dump(config_to_save, f)
+        yaml.dump(yaml_config, f)

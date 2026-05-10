@@ -5,10 +5,8 @@ from flask import request
 
 def is_remote_request():
     host = request.headers.get('Host', '').lower()
-    # If accessed via ngrok or any non-local hostname
     if 'ngrok' in host:
         return True
-    # If it has a proxy header, it's likely remote
     if request.headers.get('X-Forwarded-For'):
         return True
     return False

@@ -2,7 +2,7 @@ import os
 import sys
 import threading
 import subprocess
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, current_app
 from pyngrok import ngrok
 import psutil
 
@@ -21,11 +21,13 @@ api_bp = Blueprint('api', __name__, url_prefix='/api')
 def api_config():
     if request.method == 'POST':
         new_data = request.json
+        # Exclude masked passwords to avoid accidental overwrites with placeholders
         filtered_data = {k: v for k, v in new_data.items() if v != "********"}
         save_config(filtered_data)
         return jsonify({"status": "success"})
 
     config = load_config()
+    # Mask sensitive credentials for remote or shared-network access
     if is_remote_request():
         sensitive_keys = ["api_key", "civitai_api_token", "ngrok_authtoken"]
         for key in sensitive_keys:
@@ -194,7 +196,7 @@ def api_ngrok():
             if authtoken:
                 ngrok.set_auth_token(authtoken)
 
-            port = request.json.get("port", PORT)
+            port = request.json.get("port", current_app.config.get('PORT', PORT))
             tunnel = ngrok.connect(port)
             return jsonify({"status": "success", "url": tunnel.public_url})
         except Exception as e:

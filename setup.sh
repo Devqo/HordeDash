@@ -28,4 +28,4 @@ python3 -m pip install -r requirements.txt
 echo "[v] Setup Complete!"
 echo ""
 echo "[i] Launching Dashboard..."
-bash start_ui.sh "$@"
+bash start_ui.sh --persist-config "$@"

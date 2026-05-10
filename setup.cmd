@@ -34,4 +34,4 @@ python -m pip install -r requirements.txt
 echo [v] Setup Complete!
 echo.
 echo [i] Launching Dashboard...
-call start_ui.cmd
+call start_ui.cmd --persist-config %*

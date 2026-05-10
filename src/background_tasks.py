@@ -1,5 +1,6 @@
 import time
 import requests
+import psutil
 from src.extensions import socketio
 from src.state import stats_cache, stats_lock, models_cache, save_stats_cache
 from src.utils.config import load_config
@@ -84,7 +85,6 @@ def stats_poller():
 
 
 def sysinfo_poller():
-    import psutil
     while True:
         try:
             info = {
@@ -104,7 +104,8 @@ def models_poller():
             r = requests.get(
                 "https://aihorde.net/api/v2/status/models?type=image", timeout=20)
             if r.status_code == 200:
-                with stats_lock:  # Using stats_lock for models_cache too if it's shared, or just ensuring atomicity
+                with stats_lock:
+                    # In-place mutation preserves references held by other modules
                     models_cache.clear()
                     models_cache.extend(r.json())
                 socketio.emit("models_update", models_cache)

@@ -59,7 +59,6 @@ class WorkerManager:
         self.worker_proc = None
         self.worker_thread = None
         self.worker_start_time = None
-        # Dispatch table for telemetry parsing
         self._telemetry_handlers = [
             (RE_STATS, self._handle_stats),
             (RE_KUDOS, self._handle_kudos),
@@ -90,7 +89,6 @@ class WorkerManager:
 
             raw_line = strip_ansi_python(line)
 
-            # Status block detection
             if "^^^^" in raw_line:
                 log_state["in_status_block"] = True
                 log_state["current_status_block"] = []
@@ -100,7 +98,6 @@ class WorkerManager:
             elif log_state["in_status_block"]:
                 log_state["current_status_block"].append(raw_line)
 
-            # Telemetry Parsing via dispatch table
             for pattern, handler in self._telemetry_handlers:
                 match = pattern.search(raw_line)
                 if match:
@@ -112,8 +109,6 @@ class WorkerManager:
         self.worker_proc.wait()
         socketio.emit("worker_status", {"running": False})
         print("Log tailing stopped.")
-
-    # --- Telemetry Handlers ---
 
     def _handle_stats(self, match, _line):
         try:
@@ -195,8 +190,6 @@ class WorkerManager:
             if not found:
                 stats_cache.setdefault("processes", []).append(
                     f"Process {proc_id} ({new_state})")
-
-    # --- Worker Control ---
 
     def start_worker(self, extra_args=""):
         if self.worker_proc and self.worker_proc.poll() is None:
@@ -300,7 +293,7 @@ class WorkerManager:
             try:
                 os.kill(target_pid, signal.CTRL_C_EVENT)
             except (OSError, PermissionError):
-                pass  # Signal failed, but we still wait for potential manual or prior drain
+                pass
         else:
             os.kill(target_pid, signal.SIGINT)
 
@@ -309,7 +302,6 @@ class WorkerManager:
             if hasattr(target_proc, 'wait'):
                 target_proc.wait(timeout=120)
 
-            # If we get here, it stopped gracefully
             socketio.emit("worker_status", {"running": False})
             print(f"Worker {target_pid} stopped gracefully.")
         except (subprocess.TimeoutExpired, psutil.TimeoutExpired):
