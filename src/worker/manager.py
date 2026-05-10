@@ -55,6 +55,7 @@ def parse_status_block(lines):
             cache_copy = stats_cache.copy()
         socketio.emit("stats_update", cache_copy)
 
+
 class WorkerManager:
     def __init__(self):
         self.worker_proc = None

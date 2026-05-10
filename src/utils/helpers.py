@@ -19,9 +19,11 @@ def strip_ansi_python(text):
 
 def get_gpu_info():
     try:
-        result = subprocess.run(["nvidia-smi", "--query-gpu=utilization.gpu,memory.used,memory.total,name", "--format=csv,noheader,nounits"],
-                                capture_output=True, text=True, check=True
-                                )
+        result = subprocess.run(
+            ["nvidia-smi", "--query-gpu=utilization.gpu,memory.used,memory.total,name",
+             "--format=csv,noheader,nounits"],
+            capture_output=True, text=True, check=True
+        )
         gpus = []
         for line in result.stdout.strip().split("\n"):
             util, used, total, name = line.split(", ")

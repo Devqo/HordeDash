@@ -58,7 +58,7 @@ def create_app(ui_password=None, port=None, persist_config=False):
         update_env_file("SECRET_KEY", secret_key)
 
     # SECRET_KEY is bound to the stored password hash (or plaintext if migration failed)
-    # plus the secret_key. This ensures sessions remain stable across restarts even if 
+    # plus the secret_key. This ensures sessions remain stable across restarts even if
     # the password was migrated during the initial run.
     app.config['SECRET_KEY'] = f"{secret_key}_{stored_password}"
     app.config['UI_PASSWORD'] = stored_password
