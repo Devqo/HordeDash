@@ -24,6 +24,8 @@ RE_JOB_DETAILS = re.compile(
 RE_DREAMER = re.compile(
     r"(?<=dreamer_name: )\S+ \| \(v\d+\.\d+\.\d+\) \| horde user: \S+")
 RE_LIVE_STATUS = re.compile(r"\[ ([\+\-\%]) \]:(\d+)")
+RE_JOB_FINISHED = re.compile(r"Inference finished for job")
+RE_TOTAL_KUDOS = re.compile(r"Total Kudos Accumulated:")
 
 
 def parse_status_block(lines):
@@ -57,8 +59,20 @@ class WorkerManager:
         self.worker_proc = None
         self.worker_thread = None
         self.worker_start_time = None
+        # Dispatch table for telemetry parsing
+        self._telemetry_handlers = [
+            (RE_STATS, self._handle_stats),
+            (RE_KUDOS, self._handle_kudos),
+            (RE_KUDOS_HR, self._handle_kudos_hr),
+            (RE_JOB_ID, self._handle_job_id),
+            (RE_JOB_MODEL, self._handle_job_model),
+            (RE_JOB_DETAILS, self._handle_job_details),
+            (RE_JOB_FINISHED, self._handle_job_finished),
+            (RE_TOTAL_KUDOS, self._handle_total_kudos),
+            (RE_LIVE_STATUS, self._handle_live_status),
+        ]
 
-    def _tail_logs(self):  # noqa: C901
+    def _tail_logs(self):
         if not self.worker_proc or not self.worker_proc.stdout:
             return
 
@@ -86,93 +100,11 @@ class WorkerManager:
             elif log_state["in_status_block"]:
                 log_state["current_status_block"].append(raw_line)
 
-            # Telemetry Parsing
-            stats_match = RE_STATS.search(raw_line)
-            if stats_match:
-                try:
-                    parts = stats_match.group(1).split("|")
-                    for p in parts:
-                        if "submitted:" in p or "Jobs:" in p:
-                            val = p.split(":")[1].strip().split()[0]
-                            with stats_lock:
-                                stats_cache["session_jobs"] = int(
-                                    val.replace(",", ""))
-                except (ValueError, IndexError, KeyError):
-                    pass
-
-            kudos_match = RE_KUDOS.search(raw_line)
-            if kudos_match:
-                try:
-                    with stats_lock:
-                        stats_cache["session_kudos"] = float(
-                            kudos_match.group(1).replace(",", ""))
-                except (ValueError, IndexError):
-                    pass
-
-            kudos_hr_match = RE_KUDOS_HR.search(raw_line)
-            if kudos_hr_match:
-                try:
-                    with stats_lock:
-                        stats_cache["session_kudos_hr"] = float(
-                            kudos_hr_match.group(1).replace(",", ""))
-                except (ValueError, IndexError):
-                    pass
-
-            job_id_match = RE_JOB_ID.search(raw_line)
-            if job_id_match:
-                with stats_lock:
-                    stats_cache["current_job_id"] = job_id_match.group(0)
-                    stats_cache["activity_text"] = "Starting Inference"
-                    stats_cache["activity_subtext"] = f"Job ID: {job_id_match.group(0)}"
-
-            job_model_match = RE_JOB_MODEL.search(raw_line)
-            if job_model_match:
-                with stats_lock:
-                    stats_cache["current_job_model"] = job_model_match.group(0)
-                    stats_cache["activity_text"] = "Inference in Progress"
-                    stats_cache["activity_subtext"] = f"Model: {job_model_match.group(0)}"
-
-            job_details_match = RE_JOB_DETAILS.search(raw_line)
-            if job_details_match:
-                with stats_lock:
-                    stats_cache["current_job_details"] = job_details_match.group(
-                        0)
-                    stats_cache["activity_subtext"] += f" ({job_details_match.group(0)})"
-
-            if "Inference finished for job" in raw_line:
-                with stats_lock:
-                    stats_cache["activity_text"] = "System Idle"
-                    stats_cache["activity_subtext"] = "Waiting for next job..."
-                    stats_cache["current_job_id"] = None
-
-            if "Total Kudos Accumulated:" in raw_line:
-                try:
-                    val = raw_line.split("Total Kudos Accumulated:")[1].split(
-                        "(")[0].strip().replace(",", "")
-                    with stats_lock:
-                        stats_cache["kudos"] = float(val)
-                except (ValueError, IndexError):
-                    pass
-
-            live_match = RE_LIVE_STATUS.search(raw_line)
-            if live_match:
-                marker = live_match.group(1)
-                proc_id = live_match.group(2)
-
-                with stats_lock:
-                    procs = stats_cache.get("processes", [])
-                    found = False
-                    new_state = "BUSY" if marker == "+" else "IDLE" if marker == "-" else "PROCESSING"
-
-                    for i, p in enumerate(procs):
-                        if f"Process {proc_id}" in p:
-                            procs[i] = re.sub(r"\(.*?\)", f"({new_state})", p)
-                            found = True
-                            break
-
-                    if not found:
-                        stats_cache.setdefault("processes", []).append(
-                            f"Process {proc_id} ({new_state})")
+            # Telemetry Parsing via dispatch table
+            for pattern, handler in self._telemetry_handlers:
+                match = pattern.search(raw_line)
+                if match:
+                    handler(match, raw_line)
 
             socketio.emit("stats_update", stats_cache)
             socketio.emit("log", {"line": line})
@@ -180,6 +112,91 @@ class WorkerManager:
         self.worker_proc.wait()
         socketio.emit("worker_status", {"running": False})
         print("Log tailing stopped.")
+
+    # --- Telemetry Handlers ---
+
+    def _handle_stats(self, match, _line):
+        try:
+            parts = match.group(1).split("|")
+            for p in parts:
+                if "submitted:" in p or "Jobs:" in p:
+                    val = p.split(":")[1].strip().split()[0]
+                    with stats_lock:
+                        stats_cache["session_jobs"] = int(val.replace(",", ""))
+        except (ValueError, IndexError, KeyError):
+            pass
+
+    def _handle_kudos(self, match, _line):
+        try:
+            with stats_lock:
+                stats_cache["session_kudos"] = float(
+                    match.group(1).replace(",", ""))
+        except (ValueError, IndexError):
+            pass
+
+    def _handle_kudos_hr(self, match, _line):
+        try:
+            with stats_lock:
+                stats_cache["session_kudos_hr"] = float(
+                    match.group(1).replace(",", ""))
+        except (ValueError, IndexError):
+            pass
+
+    def _handle_job_id(self, match, _line):
+        with stats_lock:
+            stats_cache["current_job_id"] = match.group(0)
+            stats_cache["activity_text"] = "Starting Inference"
+            stats_cache["activity_subtext"] = f"Job ID: {match.group(0)}"
+
+    def _handle_job_model(self, match, _line):
+        with stats_lock:
+            stats_cache["current_job_model"] = match.group(0)
+            stats_cache["activity_text"] = "Inference in Progress"
+            stats_cache["activity_subtext"] = f"Model: {match.group(0)}"
+
+    def _handle_job_details(self, match, _line):
+        with stats_lock:
+            stats_cache["current_job_details"] = match.group(0)
+            stats_cache["activity_subtext"] += f" ({match.group(0)})"
+
+    def _handle_job_finished(self, _match, _line):
+        with stats_lock:
+            stats_cache["activity_text"] = "System Idle"
+            stats_cache["activity_subtext"] = "Waiting for next job..."
+            stats_cache["current_job_id"] = None
+
+    def _handle_total_kudos(self, _match, line):
+        try:
+            val = line.split("Total Kudos Accumulated:")[1].split(
+                "(")[0].strip().replace(",", "")
+            with stats_lock:
+                stats_cache["kudos"] = float(val)
+        except (ValueError, IndexError):
+            pass
+
+    def _handle_live_status(self, match, _line):
+        marker = match.group(1)
+        proc_id = match.group(2)
+
+        with stats_lock:
+            procs = stats_cache.get("processes", [])
+            found = False
+            new_state = (
+                "BUSY" if marker == "+" else "IDLE" if marker == "-"
+                else "PROCESSING"
+            )
+
+            for i, p in enumerate(procs):
+                if f"Process {proc_id}" in p:
+                    procs[i] = re.sub(r"\(.*?\)", f"({new_state})", p)
+                    found = True
+                    break
+
+            if not found:
+                stats_cache.setdefault("processes", []).append(
+                    f"Process {proc_id} ({new_state})")
+
+    # --- Worker Control ---
 
     def start_worker(self, extra_args=""):
         if self.worker_proc and self.worker_proc.poll() is None:
@@ -212,8 +229,9 @@ class WorkerManager:
         creationflags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0
 
         self.worker_proc = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE,
-            text=True, bufsize=1, universal_newlines=True, env=env,
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            stdin=subprocess.PIPE, text=True, bufsize=1,
+            universal_newlines=True, env=env,
             creationflags=creationflags, cwd="horde-worker-reGen"
         )
 
@@ -229,38 +247,55 @@ class WorkerManager:
         self.worker_thread.start()
         return True
 
-    def stop_worker(self, force=False):  # noqa: C901
+    def stop_worker(self, force=False):
         target_proc = self.worker_proc
         target_pid = None
 
         if target_proc and target_proc.poll() is None:
             target_pid = target_proc.pid
         else:
-            # Fallback to finding by cmdline if self.worker_proc is lost/stale
-            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-                try:
-                    cmdline = proc.info['cmdline']
-                    if cmdline and any('run_worker.py' in arg for arg in cmdline):
-                        target_pid = proc.info['pid']
-                        # Try to get a handle on the process object for wait()
-                        target_proc = psutil.Process(target_pid)
-                        break
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    continue
+            target_pid, target_proc = self._find_worker_process()
 
         if not target_pid:
             return {"status": "no_worker_found"}
 
         if force:
-            if os.name == 'nt':
-                subprocess.run(["taskkill", "/F", "/T", "/PID",
-                               str(target_pid)], capture_output=True)
-            else:
-                os.kill(target_pid, signal.SIGKILL)
-            socketio.emit("worker_status", {"running": False})
-            return {"status": "stopped"}
+            return self._force_stop(target_pid)
 
-        # Graceful Shutdown Sequence
+        self._send_stop_signal(target_pid)
+
+        # Run wait in background so we don't block the UI response
+        threading.Thread(
+            target=self._wait_and_force_kill,
+            args=(target_proc, target_pid),
+            daemon=True
+        ).start()
+
+        return {"status": "stopping_gracefully"}
+
+    def _find_worker_process(self):
+        for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+            try:
+                cmdline = proc.info['cmdline']
+                if cmdline and any('run_worker.py' in arg for arg in cmdline):
+                    pid = proc.info['pid']
+                    return pid, psutil.Process(pid)
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+        return None, None
+
+    def _force_stop(self, target_pid):
+        if os.name == 'nt':
+            subprocess.run(
+                ["taskkill", "/F", "/T", "/PID", str(target_pid)],
+                capture_output=True
+            )
+        else:
+            os.kill(target_pid, signal.SIGKILL)
+        socketio.emit("worker_status", {"running": False})
+        return {"status": "stopped"}
+
+    def _send_stop_signal(self, target_pid):
         if os.name == 'nt':
             try:
                 os.kill(target_pid, signal.CTRL_C_EVENT)
@@ -269,35 +304,22 @@ class WorkerManager:
         else:
             os.kill(target_pid, signal.SIGINT)
 
-        # Wait for drain (e.g., worker finishing current job)
-        def wait_and_cleanup():
-            try:
-                if hasattr(target_proc, 'wait'):
-                    # subprocess.Popen or psutil.Process both have wait()
-                    if isinstance(target_proc, subprocess.Popen):
-                        target_proc.wait(timeout=120)
-                    else:
-                        target_proc.wait(timeout=120)
+    def _wait_and_force_kill(self, target_proc, target_pid):
+        try:
+            if hasattr(target_proc, 'wait'):
+                target_proc.wait(timeout=120)
 
-                # If we get here, it stopped gracefully
-                socketio.emit("worker_status", {"running": False})
-                print(f"Worker {target_pid} stopped gracefully.")
-            except (subprocess.TimeoutExpired, psutil.TimeoutExpired):
-                msg = f"Worker {target_pid} drain timeout expired. Force killing... current job may not have been submitted."
-                print(msg)
-                socketio.emit("log", {"line": f"\n[WARNING]: {msg}\n"})
-
-                if os.name == 'nt':
-                    subprocess.run(
-                        ["taskkill", "/F", "/T", "/PID", str(target_pid)], capture_output=True)
-                else:
-                    os.kill(target_pid, signal.SIGKILL)
-                socketio.emit("worker_status", {"running": False})
-
-        # Run wait in background so we don't block the UI response
-        threading.Thread(target=wait_and_cleanup, daemon=True).start()
-
-        return {"status": "stopping_gracefully"}
+            # If we get here, it stopped gracefully
+            socketio.emit("worker_status", {"running": False})
+            print(f"Worker {target_pid} stopped gracefully.")
+        except (subprocess.TimeoutExpired, psutil.TimeoutExpired):
+            msg = (
+                f"Worker {target_pid} drain timeout expired. Force killing... "
+                "current job may not have been submitted."
+            )
+            print(msg)
+            socketio.emit("log", {"line": f"\n[WARNING]: {msg}\n"})
+            self._force_stop(target_pid)
 
 
 worker_manager = WorkerManager()
